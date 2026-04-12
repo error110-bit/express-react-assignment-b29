@@ -26,7 +26,7 @@
 * **Global Wall:** A shared space where all users see the same snippets in real-time or upon page refresh.
 * **Community Interaction:** Users can click on a specific snippet to view/leave remarks or comments.
 * **Anonymity & Ownership:** * No formal account system is required (keep it anonymous).
-    * **Logic:** Only the person who posted a specific comment should be able to delete it (Hint: Use local storage or unique session IDs).
+    * **Logic:** Only the person who posted a specific comment should be able to delete it.
 * **Frontend UI:** * A "single large screen" layout where code snippets appear as distinct, interactable components (like cards or sticky notes).
 
 ### Brownie Points
