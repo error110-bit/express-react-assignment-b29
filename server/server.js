@@ -9,72 +9,109 @@ connectDB();
 
 app.use(express.json());
 
-const puzzles = require('./puzzles.json');
+const Puzzle = require('./models/Puzzle');
 const attempts = {}; // To track user attempts 
 
 app.get('/', (req, res) => {
     res.send('Server is running!');
     });
 
-app.get('/puzzle/random', (req, res) => {
-    const {difficulty} = req.query;
+app.get('/puzzle/random', async (req, res) => {
+    try {
+         const {difficulty} = req.query;
 
-    let filteredPuzzles = puzzles;
+         let query = {};
 
-    // Filter puzzles by difficulty if specified
-    if (difficulty) {
-        filteredPuzzles = puzzles.filter(p => p.difficulty.toLowerCase() === difficulty.toLowerCase());
-    }
+         if (difficulty) {
+             query.difficulty = difficulty.toLowerCase();
 
-    if (filteredPuzzles.length === 0) {
-        return res.status(404).json({message: 'No puzzles found for the specified difficulty'});
-    }
-    const randomIndex = Math.floor(Math.random() * filteredPuzzles.length);
-    const puzzle = filteredPuzzles[randomIndex];
+         }
 
-    // Exclude the answer from the response
-    const {answer, hint, ...puzzleWithoutAnswer} = puzzle;
+        const puzzles = await Puzzle.find(query).lean();
 
-    res.json(puzzleWithoutAnswer);
-    });
 
-app.post('/puzzle/answer', (req, res) => {
-    const {id, answer} = req.body;
+        if (puzzles.length === 0) {
+            return res.status(404).json({message: 'No puzzles found for the specified difficulty'});
+        }
 
-    const puzzle = puzzles.find(p => p.id === id);
+        const randomIndex = Math.floor(Math.random() * puzzles.length);
+        const randomPuzzle = puzzles[randomIndex];
 
-    if (!puzzle) {
-        return res.status(404).json({message: 'Puzzle not found'});
-    }
-
-    if (attempts[id] === undefined) {
-        attempts[id] = 0; // Initialize attempts for this puzzle
-    }
-
-    const isCorrect = puzzle.answer.toLowerCase() === answer.toLowerCase();
-
-    if (isCorrect) {
-        attempts[id] = 0; // Reset attempts on correct answer
-        return res.json({message: 'Correct answer!'});
-    } else {
-        attempts[id]++; // Increment attempts for this puzzle
-        return res.json({message: 'Incorrect answer. Try again!', attempts: attempts[id], hintAvailable: attempts[id] >= 3});
+        res.json({
+            id: randomPuzzle._id,
+            description: randomPuzzle.description,
+            difficulty: randomPuzzle.difficulty
+        });
+       
+    } catch (error) {
+        console.error('Error fetching puzzle:', error.message);
+        res.status(500).json({message: 'Server error'});
     }
 });
 
-app.get('/puzzle/hint/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const puzzle = puzzles.find(p => p.id === id);
+app.post('/puzzle/answer', async (req, res) => {
+    try {
+        const { id, answer } = req.body;
 
-    if (!puzzle) {
-        return res.status(404).json({message: 'Puzzle not found'});
+        const puzzle = await Puzzle.findById(id);
+
+        if (!puzzle) {
+            return res.status(404).json({
+                message: 'Puzzle not found'
+            });
+        }
+
+        if (attempts[id] === undefined) {
+            attempts[id] = 0;
+        }
+
+        const isCorrect =
+            puzzle.answer.toLowerCase().trim() === answer.toLowerCase().trim();
+
+        if (isCorrect) {
+            attempts[id] = 0;
+
+            return res.json({
+                correct: true,
+                message: 'Correct answer!'
+            });
+        }
+
+        attempts[id]++;
+
+        res.json({
+            correct: false,
+            attempts: attempts[id],
+            hintAvailable: attempts[id] >= 3
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+});
+
+
+app.get('/puzzle/hint/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const puzzle = await Puzzle.findById(id);
+
+        if (!puzzle) {
+            return res.status(404).json({message: 'Puzzle not found'});
     }
 
-    if (attempts[id] === undefined || attempts[id] < 3) {
-        return res.status(403).json({message: 'Hint not available yet. Please attempt the puzzle at least 3 times.'});
+        if (attempts[id] === undefined || attempts[id] < 3) {
+            return res.status(403).json({message: 'Hint not available yet. Please attempt the puzzle at least 3 times.'});
     }
 
-    res.json({hint: puzzle.hint});
+        res.json({hint: puzzle.hint});
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
 });
 
 
