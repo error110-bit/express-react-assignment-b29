@@ -4,6 +4,7 @@ const express = require('express');
 const connectDB = require('./config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const authenticateUser = require('./middleware/authMiddleware');
 
 const app = express();
 
@@ -135,8 +136,32 @@ app.post('/auth/login', async (req, res) => {
     }
 });
 
+app.get('/auth/profile', authenticateUser, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId)
+            .populate('solvedPuzzles');
 
-app.post('/puzzle/answer', async (req, res) => {
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            username: user.username,
+            email: user.email,
+            score: user.score,
+            solvedPuzzles: user.solvedPuzzles
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+});
+
+app.post('/puzzle/answer',authenticateUser, async (req, res) => {
     try {
         const { id, answer } = req.body;
 
@@ -158,9 +183,21 @@ app.post('/puzzle/answer', async (req, res) => {
         if (isCorrect) {
             attempts[id] = 0;
 
+            const user = await User.findById(req.user.userId);
+
+            const alreadySolved = user.solvedPuzzles.includes(id);
+
+            if (!alreadySolved) {
+                user.solvedPuzzles.push(id);
+                user.score += 1;
+                await user.save();
+            }
+
             return res.json({
                 correct: true,
-                message: 'Correct answer!'
+                message: alreadySolved
+                    ? 'Correct answer! Puzzle already solved before.'
+                    : 'Correct answer! Score updated.'
             });
         }
 
@@ -180,7 +217,7 @@ app.post('/puzzle/answer', async (req, res) => {
 });
 
 
-app.get('/puzzle/hint/:id', async (req, res) => {
+app.get('/puzzle/hint/:id', authenticateUser, async (req, res) => {
     try {
         const id = req.params.id;
         const puzzle = await Puzzle.findById(id);
@@ -201,6 +238,20 @@ app.get('/puzzle/hint/:id', async (req, res) => {
     }
 });
 
+app.get('/leaderboard', async (req, res) => {
+    try {
+        const users = await User.find()
+            .sort({ score: -1 })
+            .select('username score');
+
+        res.json(users);
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+});
 
 app.listen(process.env.PORT || 5000, () => {
     console.log('Server is listening on port 5000');
