@@ -7,10 +7,11 @@ function Game() {
   const [attempts, setAttempts] = useState(0);
   const [hintAvailable, setHintAvailable] = useState(false);
   const [hint, setHint] = useState('');
+  const [difficulty, setDifficulty] = useState('');
   
   const fetchPuzzle = async () => {
     try {
-      const response = await api.get('/puzzle/random');
+      const response = await api.get(difficulty ? `/puzzle/random?difficulty=${difficulty}` : '/puzzle/random');
       setPuzzle(response.data);
       setAnswer('');
       setAttempts(0);
@@ -66,6 +67,16 @@ function Game() {
   return (
     <div>
       <h1>Movie Puzzler</h1>
+
+      <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+        <option value="">All Difficulties</option>
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+
+      <button onClick={fetchPuzzle}>Get New Puzzle</button>
+
       <h3>{puzzle.description}</h3>
       <input
         type="text"

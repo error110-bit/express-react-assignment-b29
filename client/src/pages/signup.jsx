@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import api from '../services/api';
 
 function Signup() {
@@ -7,6 +9,8 @@ function Signup() {
     email: '',
     password: '',
   });
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -21,7 +25,7 @@ const handleSubmit = async (e) => {
   try {
     const response = await api.post('/auth/signup', formData);
     alert(response.data.message);
-    console.log(response.data);
+    navigate('/login');
   } catch (error) {
     console.error(error);
     alert(error.response?.data?.message || 'Signup failed');

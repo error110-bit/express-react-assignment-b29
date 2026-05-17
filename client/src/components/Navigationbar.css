@@ -1,0 +1,45 @@
+.navigationbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: darksalmon;
+    padding: 10px 32px;
+    color: rgb(44, 22, 22);
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.links {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.links a {
+    color: rgb(44, 22, 22);
+    font-size: 18px;
+    transition: color 0.3s ease;
+    font-weight: 500;
+}
+
+.links a:hover {
+    color: white;
+}
+
+.links button {
+    background-color: transparent;
+    border: 2px solid tomato;
+    color: rgb (44, 22, 22);
+    padding: 5px 15px;
+    font-size: 16px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.links button:hover {
+    background-color: tomato;
+    color: rgb(44, 22, 22);
+}
